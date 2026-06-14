@@ -6,7 +6,7 @@
 hbt-routing-system/
 ├── data/                       # Quản lý dữ liệu bản đồ
 │   ├── raw/                    # Chứa file .osm gốc 
-│   └── processed/              # Dữ liệu đồ thị sau khi parse
+│   └── processed/              # Dữ liệu đồ thị sau khi parse 
 │
 ├── src/                        # Mã nguồn Backend
 │   ├── data_processing/        # Lớp xử lý dữ liệu 
@@ -16,14 +16,14 @@ hbt-routing-system/
 │   │
 │   ├── algorithms/             # Lớp thuật toán cốt lõi
 │   │   ├── astar.py            # Thuật toán A* tối ưu hóa với hàm Heuristic (Haversine)
-│   │   ├── dijkstra.py         # Thuật toán Dijkstra dùng để đối chiếu và so sánh tốc độ
+│   │   ├── dijkstra.py         # Thuật toán Dijkstra 
 │   │   └── cost_functions.py   # Các hàm tính toán trọng số cạnh dựa trên tình trạng giao thông
 │   │
 │   ├── api/                    # Cổng giao tiếp API (FastAPI)
 │   │   └── main.py             # Khởi tạo server, nạp dữ liệu và xử lý các endpoint
 │   │
 │   └── utils/                  # Các hàm tiện ích hỗ trợ
-│       └── geo_utils.py        # Chứa công cụ tính toán địa lý  (haversine_distance)
+│       └── geo_utils.py        # Chứa công cụ tính toán địa lý (haversine_distance)
 │
 ├── frontend/                   # Giao diện người dùng 
 │   ├── src/
