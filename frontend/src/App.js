@@ -3,7 +3,6 @@ import MapView from './components/MapView';
 import SearchPanel from './components/SearchPanel'; 
 import TrafficLegend from './components/TrafficLegend'; 
 import { findPath, updateTraffic, resetTraffic, getActiveTraffic, runBenchmark } from './api';
-import { findPath, updateTraffic, resetTraffic, getActiveTraffic } from './api'; 
 import './App.css';
 
 function App() {
