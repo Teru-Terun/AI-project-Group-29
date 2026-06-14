@@ -9,7 +9,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Tuple, Any
-
 # Thêm đường dẫn để FastAPI tìm thấy các module trong src
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
@@ -18,6 +17,7 @@ from src.data_processing.traffic_manager import TrafficManager
 from src.algorithms.astar import AStarSolver
 from src.algorithms.dijkstra import DijkstraSolver
 from src.algorithms.cost_functions import CostCalculator
+from src.utils.benchmark import run_routing_benchmark
 
 app = FastAPI(title="HBT Routing System API - Hai Ba Trung District")
 
@@ -97,7 +97,7 @@ class TrafficPathUpdate(BaseModel):
     path_coordinates: List[Any] 
     congestion: float = 1.0
     flood: float = 0.0
-    
+
 class BenchmarkRequest(BaseModel):
     start_lat: float
     start_lon: float
@@ -113,30 +113,36 @@ def find_path(request: RouteRequest):
         return {"status": "error", "message": "Hệ thống chưa sẵn sàng."}
 
     try:
-        u_start = spatial_index.find_nearest_node(request.start_lat, request.start_lon, max_distance_km=0.7)
-        v_end = spatial_index.find_nearest_node(request.end_lat, request.end_lon, max_distance_km=0.7)
+        u_start = spatial_index.find_nearest_node(request.start_lat, request.start_lon, max_distance_km=99999.0)
+        v_end = spatial_index.find_nearest_node(request.end_lat, request.end_lon, max_distance_km=99999.0)
 
+        # Thông báo lỗi khi đồ thị bị hỏng hoàn toàn (không có Node nào)
         if u_start is None or v_end is None:
-            return {"status": "outside_bounds", "message": "Vị trí nằm ngoài phạm vi."}
+            return {"status": "error", "message": "Lỗi dữ liệu: Không tìm thấy đỉnh nào trên đồ thị."}
 
-        start_time = time.time()
-
+        # Bật cờ return_history=True và hứng 2 biến trả về (path_ids, visited_count)
         if request.algorithm == "dijkstra":
-            path_ids = dijkstra_solver.solve(start_node=u_start, goal_node=v_end, cost_fn=cost_calc.dynamic_cost)
+            path_ids, visited_count = dijkstra_solver.solve(
+                start_node=u_start, goal_node=v_end, cost_fn=cost_calc.dynamic_cost, return_history=True
+            )
         else:
-            path_ids = solver.solve(start_node=u_start, goal_node=v_end, cost_fn=cost_calc.dynamic_cost)
+            path_ids, visited_count = solver.solve(
+                start_node=u_start, goal_node=v_end, cost_fn=cost_calc.dynamic_cost, return_history=True
+            )
 
-        exec_time_ms = round((time.time() - start_time) * 1000, 2)
-
+        # Xử lý trường hợp không tìm thấy đường
         if not path_ids:
             return {"status": "error", "message": "Khu vực bị cô lập."}
 
+        # Map ID thành tọa độ để vẽ trên UI
         path_coords = [{"lat": graph_data['nodes'][node_id][0], "lng": graph_data['nodes'][node_id][1]} for node_id in path_ids]
 
+        # Đẩy biến visited_count vào file JSON 
         return {
             "status": "success",
             "path": path_coords,
-            "metadata": {"algorithm": request.algorithm, "execution_time_ms": exec_time_ms}
+            "visited_count": visited_count,  # <-- Cột mốc quan trọng để giao diện bắt được
+            "metadata": {"algorithm": request.algorithm}
         }
     except Exception as e:
         return {"status": "error", "message": f"Lỗi nội bộ: {str(e)}"}
@@ -161,13 +167,13 @@ def update_traffic(update: TrafficPathUpdate):
         lat1, lon1 = extract_lat_lon(start_pt)
         lat2, lon2 = extract_lat_lon(end_pt)
 
-        u_start = spatial_index.find_nearest_node(lat1, lon1, max_distance_km=0.7)
-        v_end = spatial_index.find_nearest_node(lat2, lon2, max_distance_km=0.7)
+        u_start = spatial_index.find_nearest_node(lat1, lon1, max_distance_km=99999.0)
+        v_end = spatial_index.find_nearest_node(lat2, lon2, max_distance_km=99999.0)
 
         if u_start is None or v_end is None:
-            return {"status": "error", "message": "Điểm vẽ nằm ngoài phạm vi."}
+            return {"status": "error", "message": "Lỗi dữ liệu: Không tìm thấy đỉnh nào trên đồ thị."}
 
-        # 🚀 TÍNH NĂNG MỚI: TÌM ĐƯỜNG VÔ HƯỚNG (BỎ QUA LUẬT 1 CHIỀU) DÀNH RIÊNG CHO ADMIN
+        #  TÌM ĐƯỜNG VÔ HƯỚNG (BỎ QUA LUẬT 1 CHIỀU) DÀNH RIÊNG CHO ADMIN
         def find_undirected_path(start, goal):
             # Tạo đồ thị vô hướng tạm thời (nhận diện mọi node kề cạnh nhau)
             undirected_adj = defaultdict(set)
@@ -244,7 +250,7 @@ def get_active_traffic():
                 "penalty": info.get('flood') if info.get('flood', 0) > 0 else info.get('congestion', 1.0)
             })
     return active_segments
-    
+
 @app.post("/benchmark")
 def run_benchmark(request: BenchmarkRequest):
     if spatial_index is None or solver is None or dijkstra_solver is None:
@@ -268,7 +274,7 @@ def run_benchmark(request: BenchmarkRequest):
             cost_fn=cost_calc.dynamic_cost,
             num_runs=request.num_runs
         )
-
+        
         if not benchmark_result:
             return {"status": "error", "message": "Không tìm thấy đường đi để đo benchmark."}
 
