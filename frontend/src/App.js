@@ -21,8 +21,8 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(false); 
   const [adminType, setAdminType] = useState('congestion'); 
   const [penalty, setPenalty] = useState(5.0); 
-  
-    // 💡 STATE MỚI CHO TÍNH NĂNG BENCHMARK
+
+  // 💡 STATE MỚI CHO TÍNH NĂNG BENCHMARK
   const [numRuns, setNumRuns] = useState(100);
   const [benchmarkResults, setBenchmarkResults] = useState(null);
 
@@ -69,8 +69,7 @@ function App() {
     }, speed);
   }; 
 
-  // --- LOGIC TÌM ĐƯỜNG ĐỒNG BỘ VỚI BACKEND ---
-  // Nhận thêm currentAlgo để đổi thuật toán là tìm đường lại ngay lập tức
+  // --- LOGIC TÌM ĐƯỜNG BÌNH THƯỜNG ---
   const performRouting = async (s, e, currentAlgo = algorithm) => {
     if (!s || !e) return;
     setLoading(true);
@@ -83,10 +82,8 @@ function App() {
         start_lon: parseFloat(s.lng),
         end_lat: parseFloat(e.lat),
         end_lon: parseFloat(e.lng),
-        algorithm: currentAlgo
+        algorithm: currentAlgo 
       });
-
-      console.log("Dữ liệu nhận được:", data);
 
       if (data.status === "outside_bounds") {
         alert(data.message); 
@@ -98,12 +95,10 @@ function App() {
       if (data.status === "success" && data.path && data.path.length > 0) {
         animatePath(data.path); 
         
-        // Lưu metadata thống kê để hiển thị
         setRouteStats({
           visited_count: data.visited_count || data.visited_nodes || "N/A"
         });
 
-        // Snap Marker về đúng điểm đầu/cuối của đường đi thực tế
         const actualStart = data.path[0];
         const actualEnd = data.path[data.path.length - 1];
 
@@ -122,7 +117,7 @@ function App() {
       setLoading(false);
     }
   };
-  
+
   // LOGIC GỌI API BENCHMARK CHO ADMIN
   const handleRunBenchmark = async () => {
     if (!start || !end) {
@@ -169,7 +164,7 @@ function App() {
       setEnd(null);
       setPath([]);
       setRouteStats(null);
-	  setBenchmarkResults(null); // Xóa kết quả benchmark cũ
+      setBenchmarkResults(null); // Xóa kết quả benchmark cũ
     } else {
       setEnd(latlng);
       await performRouting(start, latlng);
@@ -213,7 +208,7 @@ function App() {
           setTrafficSegments([]);
           setPath([]);
           setRouteStats(null);
-		  setBenchmarkResults(null);
+          setBenchmarkResults(null);
           if (start && end) await performRouting(start, end);
           alert(response.message);
         }
@@ -237,7 +232,7 @@ function App() {
             HBT Routing AI 🤖
         </h2>
 
-        {/* BẢNG ĐIỀU KHIỂN ADMIN */}
+        {/* 🛠 BẢNG ĐIỀU KHIỂN ADMIN */}
         <div style={{ background: '#fff3e0', padding: '15px', borderRadius: '10px', marginBottom: '15px', border: '1px solid #ffe0b2' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#e67e22' }}>🛠 Chế độ Admin</span>
@@ -252,10 +247,9 @@ function App() {
                 />
             </div>
             
-
             {isAdmin && (
                 <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-					{/* KHU VỰC VẼ SỰ CỐ */}
+                    {/* KHU VỰC VẼ SỰ CỐ */}
                     <select 
                         value={adminType} 
                         onChange={(e) => setAdminType(e.target.value)}
@@ -264,6 +258,7 @@ function App() {
                         <option value="congestion">Báo Tắc đường (x Hệ số)</option>
                         <option value="flood">Báo Ngập lụt (Chặn đường)</option>
                     </select>
+                    
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Hệ số phạt:</label>
                         <input 
@@ -273,6 +268,7 @@ function App() {
                             style={{ width: '100%', padding: '5px', borderRadius: '4px', border: '1px solid #ddd' }}
                         />
                     </div>
+                    
                     <button 
                       onClick={handleResetTraffic}
                       style={{
@@ -282,12 +278,12 @@ function App() {
                     >
                       Xóa toàn bộ sự cố
                     </button>
-					
+
                     <hr style={{ margin: '10px 0', border: 'none', borderTop: '1px solid #f39c12' }} />
 
                     {/* 🚀 KHU VỰC CHẠY BENCHMARK */}
                     <span style={{ fontWeight: 'bold', fontSize: '13px', color: '#c0392b' }}>🚀 Ép xung Benchmark</span>
-
+                    
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Số vòng chạy:</label>
                         <input 
@@ -314,12 +310,12 @@ function App() {
             )}
         </div>
 
-		{/* --- KHU VỰC TÌM ĐƯỜNG --- */}
+        {/* --- KHU VỰC TÌM ĐƯỜNG --- */}
         <SearchPanel 
             label="📍 ĐIỂM XUẤT PHÁT"
             placeholder="Nhập địa điểm..." 
             selectedCoord={start}
-            onLocationSelect={(coords) => { setStart(coords); setPath([]); setRouteStats(null); setBenchmarkResults(null); }}
+            onLocationSelect={(coords) => { setStart(coords); setPath([]); setRouteStats(null); setBenchmarkResults(null); }} 
         />
         
         <SearchPanel 
@@ -328,7 +324,6 @@ function App() {
             selectedCoord={end}
             onLocationSelect={(coords) => { setEnd(coords); if(start) performRouting(start, coords); }} 
         />
-        {/* ----------------------------- */}
 
         {/* --- KHU VỰC CHỌN THUẬT TOÁN VÀ HIỂN THỊ THỐNG KÊ --- */}
         <div style={{ margin: '15px 0', padding: '15px', background: '#f8f9fa', borderRadius: '10px', border: '1px solid #e9ecef' }}>
@@ -375,23 +370,24 @@ function App() {
                         </div>
                     </div>
                 </div>
-        {/* ----------------------------- */}
+            )}
+        </div>
 
         <div className="status-box" style={{ 
             marginTop: '15px', padding: '10px', background: '#f8f9fa', borderRadius: '8px',
             borderLeft: `4px solid ${loading ? '#3498db' : '#2ecc71'}`
         }}>
           <p style={{ fontSize: '13px', color: '#34495e', margin: 0 }}>
-			{isAdmin ? "✏️ Admin: Kéo thả để vẽ tắc đường, hoặc bấm Benchmark." :
+            {isAdmin ? "✏️ Admin: Kéo thả để vẽ tắc đường, hoặc bấm Benchmark." :
              !start ? "👉 Bước 1: Chọn điểm xuất phát" : 
              !end ? "👉 Bước 2: Chọn điểm đến" : 
-			 loading ? "⏳ Đang tính toán..." : "✅ Hoàn tất"}
+             loading ? "⏳ Đang tính toán..." : "✅ Hoàn tất"}
           </p>
         </div>
 
         {(start || end) && !isAdmin && (
           <button 
-			onClick={() => { setStart(null); setEnd(null); setPath([]); setRouteStats(null); setBenchmarkResults(null); }}
+            onClick={() => { setStart(null); setEnd(null); setPath([]); setRouteStats(null); setBenchmarkResults(null); }}
             style={{
               marginTop: '15px', width: '100%', padding: '10px', background: '#e74c3c', 
               color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold'
