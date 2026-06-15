@@ -91,6 +91,7 @@ class RouteRequest(BaseModel):
     start_lon: float
     end_lat: float
     end_lon: float
+    visualize: bool = False 
     algorithm: str = "astar"
 
 class TrafficPathUpdate(BaseModel):
@@ -122,26 +123,29 @@ def find_path(request: RouteRequest):
 
         # Bật cờ return_history=True và hứng 2 biến trả về (path_ids, visited_count)
         if request.algorithm == "dijkstra":
-            path_ids, visited_count = dijkstra_solver.solve(
+            path_ids, visited_count, visited_order_ids = dijkstra_solver.solve(
                 start_node=u_start, goal_node=v_end, cost_fn=cost_calc.dynamic_cost, return_history=True
             )
         else:
-            path_ids, visited_count = solver.solve(
+            path_ids, visited_count, visited_order_ids = solver.solve(
                 start_node=u_start, goal_node=v_end, cost_fn=cost_calc.dynamic_cost, return_history=True
             )
-
+        if not request.visualize:
+            visited_order_ids = []
         # Xử lý trường hợp không tìm thấy đường
         if not path_ids:
             return {"status": "error", "message": "Khu vực bị cô lập."}
 
         # Map ID thành tọa độ để vẽ trên UI
         path_coords = [{"lat": graph_data['nodes'][node_id][0], "lng": graph_data['nodes'][node_id][1]} for node_id in path_ids]
+        visited_order = [{"lat": graph_data['nodes'][node_id][0], "lng": graph_data['nodes'][node_id][1]} for node_id in visited_order_ids]
 
         # Đẩy biến visited_count vào file JSON 
         return {
             "status": "success",
             "path": path_coords,
             "visited_count": visited_count,  # <-- Cột mốc quan trọng để giao diện bắt được
+            "visited_order": visited_order,
             "metadata": {"algorithm": request.algorithm}
         }
     except Exception as e:
