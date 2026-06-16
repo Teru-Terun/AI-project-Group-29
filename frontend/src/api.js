@@ -53,6 +53,16 @@ export const updateTraffic = async (pathData) => {
   }
 };
 
+export const tomtomUpdateTraffic = async () => {
+  try {
+    const response = await api.get('/tomtom-update-traffic');
+    return response.data;
+  } catch (error) {
+    console.error("Lỗi API tomtomUpdateTraffic:", error);
+    return null;
+  }
+};
+
 /**
  * Lấy danh sách các đoạn đường sự cố để hiển thị lên bản đồ
  */
@@ -97,6 +107,7 @@ const apiService = {
     findPath,
     runBenchmark, // Đừng quên xuất khẩu hàm mới ở đây
     updateTraffic, 
+	tomtomUpdateTraffic,
     getTrafficStatus, 
     getActiveTraffic, 
     resetTraffic 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import MapView from './components/MapView';
 import SearchPanel from './components/SearchPanel'; 
 import TrafficLegend from './components/TrafficLegend'; 
-import { findPath, updateTraffic, resetTraffic, getActiveTraffic, runBenchmark } from './api';
+import { findPath, updateTraffic, tomtomUpdateTraffic, resetTraffic, getActiveTraffic, runBenchmark } from './api';
 import './App.css';
 
 function App() {
@@ -14,8 +14,11 @@ function App() {
   const pathIntervalRef = React.useRef(null);
   
   // --- STATE CHỌN THUẬT TOÁN VÀ THỐNG KÊ ---
+  const [visualMode, setVisualMode] = useState(false); 
+  const [isVisualizing, setIsVisualizing] = useState(false); 
   const [algorithm, setAlgorithm] = useState('astar'); 
   const [routeStats, setRouteStats] = useState(null);  
+  const [visitedNodes, setVisitedNodes] = useState([]); 
 
   // --- TRẠNG THÁI ADMIN PANEL ---
   const [isAdmin, setIsAdmin] = useState(false); 
@@ -25,6 +28,9 @@ function App() {
   // 💡 STATE MỚI CHO TÍNH NĂNG BENCHMARK
   const [numRuns, setNumRuns] = useState(100);
   const [benchmarkResults, setBenchmarkResults] = useState(null);
+  
+  // TOMTOM API
+  const [autoTomTom, setAutoTomTom] = useState(false);
 
   // --- HÀM LẤY DỮ LIỆU GIAO THÔNG (REFRESH) ---
   const refreshTrafficData = useCallback(async () => {
@@ -56,7 +62,7 @@ function App() {
     setPath([]); 
     
     let currentIndex = 0;
-    const speed = 30; // Tốc độ vẽ
+    const speed = 15; // Tốc độ vẽ
 
     pathIntervalRef.current = setInterval(() => {
         if (currentIndex < fullPath.length) {
@@ -68,10 +74,32 @@ function App() {
         }
     }, speed);
   }; 
+  
+  const animateSearchProcess = (historyCoords, finalPath) => {
+    setIsVisualizing(true);
+    setVisitedNodes([]); 
+	setPath([]); 
+	let currentIndex = 0;
+	const CHUNK_SIZE = 30; 
+	const timer = setInterval(() => {
+      if (currentIndex >= historyCoords.length) {
+        clearInterval(timer);
+        animatePath(finalPath);
+        setIsVisualizing(false);
+        return;
+      }
+
+      const chunk = historyCoords.slice(currentIndex, currentIndex + CHUNK_SIZE);
+      setVisitedNodes(prev => [...prev, ...chunk]);
+      
+      currentIndex += CHUNK_SIZE;
+    }, 20); 
+  };
 
   // --- LOGIC TÌM ĐƯỜNG BÌNH THƯỜNG ---
   const performRouting = async (s, e, currentAlgo = algorithm) => {
     if (!s || !e) return;
+	if (isVisualizing) return; 
     setLoading(true);
     setRouteStats(null);
     setBenchmarkResults(null); // Reset benchmark cũ nếu có
@@ -82,6 +110,7 @@ function App() {
         start_lon: parseFloat(s.lng),
         end_lat: parseFloat(e.lat),
         end_lon: parseFloat(e.lng),
+		visualize: visualMode,
         algorithm: currentAlgo 
       });
 
@@ -89,11 +118,19 @@ function App() {
         alert(data.message); 
         setEnd(null); 
         setPath([]);
+		setVisitedNodes([]);
         return;
       }
-
+		
+	  
       if (data.status === "success" && data.path && data.path.length > 0) {
-        animatePath(data.path); 
+		if (visualMode && data.visited_order && data.visited_order.length > 0) {
+		  animateSearchProcess(data.visited_order, data.path);
+	    } else {
+	      setPath(data.path);
+	      setVisitedNodes([]); 
+	    }
+        if(!visualMode) animatePath(data.path); 
         
         setRouteStats({
           visited_count: data.visited_count || data.visited_nodes || "N/A"
@@ -104,11 +141,13 @@ function App() {
 
         setStart({ lat: actualStart.lat, lng: actualStart.lng });
         setEnd({ lat: actualEnd.lat, lng: actualEnd.lng });
+		
 
       } else {
         alert(data.message || "Không tìm thấy lộ trình khả dụng.");
         setPath([]);
         setEnd(null);
+		setVisitedNodes([]);
       }
     } catch (err) {
       alert("Lỗi kết nối Server: " + err.message);
@@ -157,7 +196,7 @@ function App() {
 
   // --- XỬ LÝ CLICK BẢN ĐỒ ---
   const handleMapSelection = async (latlng) => {
-    if (isAdmin) return; 
+    if (isAdmin || isVisualizing) return; 
 
     if (!start || (start && end)) {
       setStart(latlng);
@@ -165,6 +204,7 @@ function App() {
       setPath([]);
       setRouteStats(null);
       setBenchmarkResults(null); // Xóa kết quả benchmark cũ
+	  setVisitedNodes([]); 
     } else {
       setEnd(latlng);
       await performRouting(start, latlng);
@@ -199,6 +239,47 @@ function App() {
     }
   };
 
+  // --- TOMTOM API ---
+  const handleTomTomUpdate = useCallback(async() => {
+	setLoading(true);
+	try {
+	  const response = await tomtomUpdateTraffic();
+	  if (response.status === "success") {
+        await refreshTrafficData(); 
+	  } else {
+          alert("Lỗi API: " + response.message);
+	  }
+	}
+	catch (err) {
+      alert("Lỗi hệ thống: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [refreshTrafficData]);
+  useEffect(() => {
+    let tomtomInterval = null;
+
+    if (autoTomTom) {
+      // Chạy ngay lần đầu tiên khi vừa tích chọn
+      handleTomTomUpdate(); 
+
+      // Thiết lập chu kỳ chạy lại sau mỗi 10 phút (600,000 ms)
+      // Bạn có thể sửa 600000 thành 60000 (1 phút) nếu muốn test nhanh
+      tomtomInterval = setInterval(() => {
+        console.log("🕒 Đến chu kỳ 10 phút: Tự động gọi TomTom API...");
+        handleTomTomUpdate();
+      }, 600000); 
+    }
+
+    // Hàm dọn dẹp khi người dùng bỏ tích hoặc tắt ứng dụng
+    return () => {
+      if (tomtomInterval) {
+        clearInterval(tomtomInterval);
+        console.log("🛑 Đã dừng chế độ tự động đồng bộ TomTom.");
+      }
+    };
+  }, [autoTomTom]);
+  
   // --- RESET TOÀN BỘ HỆ THỐNG ---
   const handleResetTraffic = async () => {
     if (window.confirm("Xác nhận xóa toàn bộ dữ liệu sự cố và khôi phục giao thông bình thường?")) {
@@ -209,6 +290,7 @@ function App() {
           setPath([]);
           setRouteStats(null);
           setBenchmarkResults(null);
+		  setVisitedNodes([]);
           if (start && end) await performRouting(start, end);
           alert(response.message);
         }
@@ -243,6 +325,7 @@ function App() {
                       setIsAdmin(e.target.checked);
                       setBenchmarkResults(null); // Tắt admin thì ẩn luôn bảng benchmark
                     }}
+					disabled={isVisualizing}
                     style={{ cursor: 'pointer', width: '20px', height: '20px' }}
                 />
             </div>
@@ -309,6 +392,21 @@ function App() {
                 </div>
             )}
         </div>
+		
+		<div style={{ background: '#fff3e0', padding: '15px', borderRadius: '10px', marginBottom: '15px', border: '1px solid #ffe0b2' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#e67e22' }}>TOM TOM API</span>
+                <input 
+                    type="checkbox" 
+                    checked={autoTomTom} 
+                    onChange={(e) => {
+                      setAutoTomTom(e.target.checked);
+                    }}
+					disabled={isVisualizing || loading}
+                    style={{ cursor: 'pointer', width: '20px', height: '20px' }}
+                />
+            </div>
+		</div>
 
         {/* --- KHU VỰC TÌM ĐƯỜNG --- */}
         <SearchPanel 
@@ -371,14 +469,28 @@ function App() {
                     </div>
                 </div>
             )}
+			<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
+				<input 
+				  type="checkbox" 
+				  id="visualToggle"
+				  checked={visualMode}
+			      onChange={(e) => setVisualMode(e.target.checked)}
+				  disabled={isVisualizing} 
+				  style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+				/>
+				<label htmlFor="visualToggle" style={{ fontSize: '13px', fontWeight: 'bold', color: '#2980b9', cursor: 'pointer', margin: 0 }}>
+				  Hiển thị các đỉnh thuật toán đã duyệt qua
+				</label>
+          </div>
         </div>
 
         <div className="status-box" style={{ 
             marginTop: '15px', padding: '10px', background: '#f8f9fa', borderRadius: '8px',
-            borderLeft: `4px solid ${loading ? '#3498db' : '#2ecc71'}`
+            borderLeft: `4px solid ${isVisualizing ? '#9b59b6' : loading ? '#3498db' : '#2ecc71'}`
         }}>
           <p style={{ fontSize: '13px', color: '#34495e', margin: 0 }}>
-            {isAdmin ? "✏️ Admin: Kéo thả để vẽ tắc đường, hoặc bấm Benchmark." :
+            {isVisualizing ? "Loading..." :
+			 isAdmin ? "✏️ Admin: Kéo thả để vẽ tắc đường, hoặc bấm Benchmark." :
              !start ? "👉 Bước 1: Chọn điểm xuất phát" : 
              !end ? "👉 Bước 2: Chọn điểm đến" : 
              loading ? "⏳ Đang tính toán..." : "✅ Hoàn tất"}
@@ -387,16 +499,16 @@ function App() {
 
         {(start || end) && !isAdmin && (
           <button 
-            onClick={() => { setStart(null); setEnd(null); setPath([]); setRouteStats(null); setBenchmarkResults(null); }}
+            onClick={() => { setStart(null); setEnd(null); setPath([]); setRouteStats(null); setBenchmarkResults(null);}}
+			disabled={isVisualizing}
             style={{
-              marginTop: '15px', width: '100%', padding: '10px', background: '#e74c3c', 
-              color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold'
+              marginTop: '15px', width: '100%', padding: '10px', background: isVisualizing ? '#bdc3c7' : '#e74c3c', 
+              color: 'white', border: 'none', borderRadius: '6px', cursor: isVisualizing ? 'not-allowed' : 'pointer', fontWeight: 'bold'
             }}
           >
             Xóa lộ trình & Chọn lại
           </button>
         )}
-
         <TrafficLegend />
       </div>
 
@@ -405,12 +517,13 @@ function App() {
         startCoord={start} 
         endCoord={end} 
         path={path} 
+		visitedNodes={visitedNodes}
         onMapClick={handleMapSelection} 
         onMapRightClick={handleReportAdminPath} 
         isAdminMode={isAdmin}
         adminConfig={{ type: adminType, penalty: penalty }}
         trafficSegments={trafficSegments}
-      />
+      />	
     </div>
   );
 }
