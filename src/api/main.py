@@ -5,13 +5,13 @@ import traceback
 import time
 import json
 from datetime import datetime  
-import heapq  # 💡 Thêm thư viện để chạy Dijkstra Vô hướng cho Admin
-from collections import defaultdict  # 💡 Thêm thư viện cấu trúc dữ liệu
+import heapq
+from collections import defaultdict
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Tuple, Any
-# Thêm đường dẫn để FastAPI tìm thấy các module trong src
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from src.data_processing.spatial_index import SpatialIndex
