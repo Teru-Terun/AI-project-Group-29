@@ -171,8 +171,7 @@ const MapView = ({
                         );
                     })}
 					
-					{/* 🌟 MỚI: VẼ HIỆU ỨNG AI ĐANG QUÉT (VISUAL MODE) */}
-                    {/* Đặt nó ở trên Polyline đường chính để đường xanh dương đè lên trên cho đẹp */}
+					{/* VẼ HIỆU ỨNG AI ĐANG QUÉT (VISUAL MODE) */}
                     {visitedNodes && visitedNodes.length > 0 && visitedNodes.map((node, idx) => (
                         <CircleMarker 
                             key={`visited-${idx}`}
