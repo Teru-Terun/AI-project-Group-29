@@ -41,9 +41,16 @@ hbt-routing-system/
 └── README.md                   # Tài liệu hướng dẫn dự án
 ```
 
-Hướng dẫn chạy dự án:  
-+) Mở new terminal  
-+) Gõ lệnh python -m src.data_processing.osm_parser (Chỉ chạy một lần để xử lý dữ liệu)  
-+) Gõ lệnh python -m uvicorn src.api.main:app --app-dir . --reload  
+Hướng dẫn chạy dự án:\
+B1 :Cài đặt môi trường ảo: python -m venv venv
+   :Kích hoạt môi trường: venv\Scripts\activate
+ +) Nếu có lỗi không cho phép kích hoạt venv trên Windows PowerShell:
+   Mở PowerShell bằng quyền Admin (Run as Administrator) và chạy lệnh sau để cấp quyền thực thi script:
+              Set-ExecutionPolicy Unrestricted -Scope CurrentUser
+B2: Cài đặt thư viện : pip install -r requirements.txt; npm install
+B3: Chuẩn bị tài nguyên và tiền xử lý dữ 
++) Mở new terminal\
++) Gõ lệnh python -m src.data_processing.osm_parser (Chỉ chạy một lần để xử lý dữ liệu)\
++) Gõ lệnh python -m uvicorn src.api.main:app --app-dir . --reload\ ( Khởi động backend)
 +) New terminal khác -> chuyển sang command prompt ->
-  gõ lần lượt 2 lệnh : cd frontend; npm start
+  gõ lần lượt 2 lệnh : cd frontend; npm start   (Khởi động frontend)
