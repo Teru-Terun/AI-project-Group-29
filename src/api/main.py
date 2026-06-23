@@ -11,7 +11,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Tuple, Any
-
+# Thêm đường dẫn để FastAPI tìm thấy các module trong src
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from src.data_processing.spatial_index import SpatialIndex
@@ -20,7 +20,6 @@ from src.algorithms.astar import AStarSolver
 from src.algorithms.dijkstra import DijkstraSolver
 from src.algorithms.cost_functions import CostCalculator
 from src.utils.benchmark import run_routing_benchmark
-from src.api.tomtom import TomTom
 
 app = FastAPI(title="HBT Routing System API - Hai Ba Trung District")
 

@@ -6,7 +6,7 @@ def run_routing_benchmark(solver_instance, start_node, goal_node, cost_fn, num_r
     Hàm benchmark độc lập giúp đo hiệu năng thuật toán tìm đường.
     Trả về: Dict chứa mảng node_ids và các chỉ số thống kê, hoặc None nếu không có đường.
     """
-    # 1. Khởi động
+    # 1. Khởi động nóng (Warm-up)
     for _ in range(5):
         solver_instance.solve(start_node, goal_node, cost_fn=cost_fn, return_history=False)
 
