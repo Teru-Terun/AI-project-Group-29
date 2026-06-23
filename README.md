@@ -48,7 +48,7 @@ B1 :Cài đặt môi trường ảo: python -m venv venv
    Mở PowerShell bằng quyền Admin (Run as Administrator) và chạy lệnh sau để cấp quyền thực thi script:  
               Set-ExecutionPolicy Unrestricted -Scope CurrentUser  
 B2: Cài đặt thư viện : pip install -r requirements.txt; npm install  
-B3: Chuẩn bị tài nguyên và tiền xử lý dữ   
+B3: Chuẩn bị tài nguyên và tiền xử lý dữ liệu   
 +) Mở new terminal  
 +) Gõ lệnh python -m src.data_processing.osm_parser (Chỉ chạy một lần để xử lý dữ liệu)  
 +) Gõ lệnh python -m uvicorn src.api.main:app --app-dir . --reload ( Khởi động backend)  
