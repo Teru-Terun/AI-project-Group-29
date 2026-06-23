@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import MapView from './components/MapView';
 import SearchPanel from './components/SearchPanel'; 
 import TrafficLegend from './components/TrafficLegend'; 
-import { findPath, updateTraffic, resetTraffic, getActiveTraffic, runBenchmark } from './api';
+import { findPath, updateTraffic, tomtomUpdateTraffic, resetTraffic, getActiveTraffic, runBenchmark } from './api';
 import './App.css';
 
 function App() {
@@ -25,9 +25,12 @@ function App() {
   const [adminType, setAdminType] = useState('congestion'); 
   const [penalty, setPenalty] = useState(5.0); 
 
-  // 💡 STATE MỚI CHO TÍNH NĂNG BENCHMARK
+  // TRẠNG THÁI CHO TÍNH NĂNG BENCHMARK
   const [numRuns, setNumRuns] = useState(100);
   const [benchmarkResults, setBenchmarkResults] = useState(null);
+  
+  // TOMTOM API
+  const [autoTomTom, setAutoTomTom] = useState(false);
 
   // --- HÀM LẤY DỮ LIỆU GIAO THÔNG (REFRESH) ---
   const refreshTrafficData = useCallback(async () => {
@@ -86,6 +89,13 @@ function App() {
         return;
       }
 
+      const chunk = historyCoords.slice(currentIndex, currentIndex + CHUNK_SIZE);
+      setVisitedNodes(prev => [...prev, ...chunk]);
+      
+      currentIndex += CHUNK_SIZE;
+    }, 20); 
+  };
+
   // --- LOGIC TÌM ĐƯỜNG BÌNH THƯỜNG ---
   const performRouting = async (s, e, currentAlgo = algorithm) => {
     if (!s || !e) return;
@@ -100,6 +110,7 @@ function App() {
         start_lon: parseFloat(s.lng),
         end_lat: parseFloat(e.lat),
         end_lon: parseFloat(e.lng),
+		visualize: visualMode,
         algorithm: currentAlgo 
       });
 
@@ -193,6 +204,7 @@ function App() {
       setPath([]);
       setRouteStats(null);
       setBenchmarkResults(null); // Xóa kết quả benchmark cũ
+	  setVisitedNodes([]); 
     } else {
       setEnd(latlng);
       await performRouting(start, latlng);
@@ -278,6 +290,7 @@ function App() {
           setPath([]);
           setRouteStats(null);
           setBenchmarkResults(null);
+		  setVisitedNodes([]);
           if (start && end) await performRouting(start, end);
           alert(response.message);
         }
@@ -312,6 +325,7 @@ function App() {
                       setIsAdmin(e.target.checked);
                       setBenchmarkResults(null); // Tắt admin thì ẩn luôn bảng benchmark
                     }}
+					disabled={isVisualizing}
                     style={{ cursor: 'pointer', width: '20px', height: '20px' }}
                 />
             </div>
@@ -475,7 +489,8 @@ function App() {
             borderLeft: `4px solid ${isVisualizing ? '#9b59b6' : loading ? '#3498db' : '#2ecc71'}`
         }}>
           <p style={{ fontSize: '13px', color: '#34495e', margin: 0 }}>
-            {isAdmin ? "✏️ Admin: Kéo thả để vẽ tắc đường, hoặc bấm Benchmark." :
+            {isVisualizing ? "Loading..." :
+			 isAdmin ? "✏️ Admin: Kéo thả để vẽ tắc đường, hoặc bấm Benchmark." :
              !start ? "👉 Bước 1: Chọn điểm xuất phát" : 
              !end ? "👉 Bước 2: Chọn điểm đến" : 
              loading ? "⏳ Đang tính toán..." : "✅ Hoàn tất"}
@@ -484,7 +499,8 @@ function App() {
 
         {(start || end) && !isAdmin && (
           <button 
-            onClick={() => { setStart(null); setEnd(null); setPath([]); setRouteStats(null); setBenchmarkResults(null); }}
+            onClick={() => { setStart(null); setEnd(null); setPath([]); setRouteStats(null); setBenchmarkResults(null);}}
+			disabled={isVisualizing}
             style={{
               marginTop: '15px', width: '100%', padding: '10px', background: isVisualizing ? '#bdc3c7' : '#e74c3c', 
               color: 'white', border: 'none', borderRadius: '6px', cursor: isVisualizing ? 'not-allowed' : 'pointer', fontWeight: 'bold'
