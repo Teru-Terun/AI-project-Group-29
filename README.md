@@ -41,9 +41,16 @@ hbt-routing-system/
 └── README.md                   # Tài liệu hướng dẫn dự án
 ```
 
+<<<<<<< HEAD
 Hướng dẫn chạy dự án:  
 +) Mở new terminal  
 +) Gõ lệnh python -m src.data_processing.osm_parser (Chỉ chạy một lần để xử lý dữ liệu)  
 +) Gõ lệnh python -m uvicorn src.api.main:app --app-dir . --reload  
+=======
+Hướng dẫn chạy dự án:\
++) Mở new terminal\
++) Gõ lệnh python -m src.data_processing.osm_parser (Chỉ chạy một lần để xử lý dữ liệu)\
++) Gõ lệnh python -m uvicorn src.api.main:app --app-dir . --reload\
+>>>>>>> parent of 2bb8659 (Merge pull request #1 from umok1/main)
 +) New terminal khác -> chuyển sang command prompt ->
   gõ lần lượt 2 lệnh : cd frontend; npm start
