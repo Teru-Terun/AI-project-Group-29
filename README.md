@@ -41,12 +41,6 @@ hbt-routing-system/
 └── README.md                   # Tài liệu hướng dẫn dự án
 ```
 
-<<<<<<< HEAD
-Hướng dẫn chạy dự án:  
-+) Mở new terminal  
-+) Gõ lệnh python -m src.data_processing.osm_parser (Chỉ chạy một lần để xử lý dữ liệu)  
-+) Gõ lệnh python -m uvicorn src.api.main:app --app-dir . --reload  
-=======
 Hướng dẫn chạy dự án:\
 +) Mở new terminal\
 +) Gõ lệnh python -m src.data_processing.osm_parser (Chỉ chạy một lần để xử lý dữ liệu)\
