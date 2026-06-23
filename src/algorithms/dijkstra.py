@@ -61,7 +61,7 @@ class DijkstraSolver:
                 visited_count += 1
                 visited_order.append(current)
 
-            # 🎯 ĐIỀU KIỆN DỪNG: Đã đến đích
+            # ĐIỀU KIỆN DỪNG: Đã đến đích
             if current == goal_node:
                 path = self._reconstruct_path(came_from, current)
                 return (path, visited_count, visited_order) if return_history else path
@@ -86,7 +86,7 @@ class DijkstraSolver:
                 else:
                     weight = edge_data.get('weight', 1.0) # Trọng số mặc định nếu không có
 
-                # 🛑 Chặn đường: Nếu gặp ngập lụt nặng (weight = vô cực), không đi đường này
+                # Nếu gặp ngập lụt nặng (weight = vô cực), không đi đường này
                 if weight >= self.INF_THRESHOLD:
                     continue
 

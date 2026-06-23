@@ -7,13 +7,12 @@ from datetime import datetime
 API_KEY = "wZqXIYyYQvOiaYlBN0TmmZG3NNXPKQ5N"  # Thay bằng key của bạn
 
 # Bounding box (minLon, minLat, maxLon, maxLat)
-# Ví dụ: Khu vực Hà Nội
 BBOX = "105.825,20.985,105.878,21.028"
 
 # Các tham số khác
-LANGUAGE = "en-GB"          # hoặc "en-GB"
+LANGUAGE = "en-GB"
 FIELDS = "{incidents{type,geometry{type,coordinates},properties{iconCategory,magnitudeOfDelay,events{description,code}}}}" 
-TIME_VALIDITY = "present"   # present hoặc future
+TIME_VALIDITY = "present"
 
 # Tên file output
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
